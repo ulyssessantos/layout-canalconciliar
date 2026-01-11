@@ -1,0 +1,12 @@
+<svg width="1440" height="900" viewBox="0 0 1440 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="900" fill="#F8FBFE" />
+  <circle cx="940" cy="380" r="380" fill="url(#paint0_radial)" />
+  <path d="M0 740C240 700 520 690 760 730C1000 770 1230 840 1440 820V900H0V740Z" fill="#E6F3FF" />
+  <path d="M0 770C260 735 560 730 800 760C1040 790 1260 850 1440 830V900H0V770Z" fill="#D1E7FA" />
+  <defs>
+    <radialGradient id="paint0_radial" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(940 380) rotate(90) scale(380)">
+      <stop stop-color="#D8ECFF" />
+      <stop offset="1" stop-color="#F8FBFE" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+</svg>
