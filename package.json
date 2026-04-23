@@ -1,0 +1,26 @@
+{
+  "name": "layout-canalconciliar",
+  "version": "1.0.0",
+  "description": "Serviço Node.js com docxtemplater para geração de DOCX/PPTX/XLSX a partir de template e JSON",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "keywords": [
+    "docxtemplater",
+    "node",
+    "springboot",
+    "docx",
+    "pptx",
+    "xlsx"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "docxtemplater": "^3.50.0",
+    "express": "^4.21.2",
+    "multer": "^1.4.5-lts.2",
+    "pizzip": "^3.1.7"
+  }
+}
