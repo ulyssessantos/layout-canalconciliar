@@ -3,7 +3,13 @@ const multer = require("multer");
 const PizZip = require("pizzip");
 const Docxtemplater = require("docxtemplater");
 const expressionParser = require("docxtemplater/expressions.js");
+const fs = require("node:fs/promises");
+const os = require("node:os");
+const path = require("node:path");
+const { execFile } = require("node:child_process");
+const { promisify } = require("node:util");
 
+const execFileAsync = promisify(execFile);
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -12,7 +18,8 @@ const supportedExtensions = new Set(["docx", "pptx", "xlsx"]);
 const mimeByExtension = {
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  pdf: "application/pdf"
 };
 
 const storage = multer.memoryStorage();
@@ -78,11 +85,47 @@ function renderTemplate(buffer, data) {
   });
 }
 
+async function convertDocxToPdf(docxBuffer) {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "template-render-"));
+  const inputPath = path.join(tempDir, "input.docx");
+  const outputPath = path.join(tempDir, "input.pdf");
+
+  try {
+    await fs.writeFile(inputPath, docxBuffer);
+
+    await execFileAsync("soffice", [
+      "--headless",
+      "--convert-to",
+      "pdf:writer_pdf_Export",
+      "--outdir",
+      tempDir,
+      inputPath
+    ]);
+
+    return await fs.readFile(outputPath);
+  } catch (error) {
+    if (error && error.code === "ENOENT") {
+      throw new Error("Conversão para PDF indisponível: LibreOffice (soffice) não encontrado no ambiente.");
+    }
+    throw new Error(`Falha ao converter DOCX para PDF: ${error.message}`);
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  }
+}
+
+function shouldExportPdf(req) {
+  const requestedFormat = (req.body.outputFormat || "").toString().toLowerCase();
+  const requestedByFormat = requestedFormat === "pdf";
+  const requestedByFileName = getExtension(req.body.outputName || "") === "pdf";
+
+  return requestedByFormat || requestedByFileName;
+}
+
 app.get("/health", (_req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
-app.post("/render", upload.single("template"), (req, res) => {
+app.post("/render", upload.single("template"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -98,14 +141,23 @@ app.post("/render", upload.single("template"), (req, res) => {
     }
 
     const data = normalizeDataPayload(req.body.data || req.body);
-    const outputName = req.body.outputName || `${getBaseName(req.file.originalname)}-rendered.${extension}`;
+    const exportPdf = shouldExportPdf(req);
+
+    if (exportPdf && extension !== "docx") {
+      return res.status(400).json({
+        error: "Conversão para PDF é suportada apenas para templates DOCX."
+      });
+    }
 
     const renderedBuffer = renderTemplate(req.file.buffer, data);
+    const resultExtension = exportPdf ? "pdf" : extension;
+    const outputName = req.body.outputName || `${getBaseName(req.file.originalname)}-rendered.${resultExtension}`;
+    const outputBuffer = exportPdf ? await convertDocxToPdf(renderedBuffer) : renderedBuffer;
 
-    res.setHeader("Content-Type", mimeByExtension[extension]);
+    res.setHeader("Content-Type", mimeByExtension[resultExtension]);
     res.setHeader("Content-Disposition", `attachment; filename=\"${outputName}\"`);
 
-    return res.status(200).send(renderedBuffer);
+    return res.status(200).send(outputBuffer);
   } catch (error) {
     return res.status(422).json({
       error: "Erro ao processar template.",

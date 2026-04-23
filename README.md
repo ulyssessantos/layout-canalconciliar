@@ -10,6 +10,7 @@ Pensado para integração com uma aplicação externa (ex.: **Spring Boot**) que
   - `.docx`
   - `.pptx`
   - `.xlsx`
+- `.pdf` (saída via conversão de DOCX renderizado)
 - Placeholders simples
 - Loops
 - Condições
@@ -62,6 +63,7 @@ Gera um documento a partir de template + dados JSON.
 - `template`: arquivo `.docx`, `.pptx` ou `.xlsx`
 - `data`: string JSON (ou campos JSON no body)
 - `outputName` (opcional): nome do arquivo de saída
+- `outputFormat` (opcional): use `pdf` para converter DOCX preenchido em PDF
 
 #### Exemplo com cURL
 
@@ -78,6 +80,17 @@ curl -X POST "http://localhost:3000/render" \
     "aprovado": true
   }' \
   --output contrato-preenchido.docx
+```
+
+
+#### Exemplo para retorno em PDF
+
+```bash
+curl -X POST "http://localhost:3000/render" \
+  -F "template=@./templates/contrato.docx" \
+  -F 'data={"cliente":{"nome":"Maria"},"aprovado":true}' \
+  -F "outputFormat=pdf" \
+  --output contrato-preenchido.pdf
 ```
 
 ## Sintaxe de template (Docxtemplater)
@@ -132,6 +145,9 @@ Fluxo recomendado:
 ## Observações
 
 - Limite de upload de arquivo: **20 MB** (configurado no multer).
+- Para conversão DOCX -> PDF, o ambiente precisa ter **LibreOffice (`soffice`)** disponível no PATH.
+- Conversão para PDF é suportada apenas quando o template de entrada é DOCX.
+- Fidelidade visual do PDF depende das fontes e versão do LibreOffice no servidor.
 - Para ambientes produtivos, recomenda-se adicionar:
   - autenticação/autorização entre serviços
   - observabilidade (logs estruturados, tracing e métricas)
