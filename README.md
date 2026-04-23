@@ -21,6 +21,7 @@ Pensado para integração com uma aplicação externa (ex.: **Spring Boot**) que
 - Node.js
 - Express
 - [docxtemplater](https://docxtemplater.com/)
+- angular-expressions (usado pelo parser `docxtemplater/expressions.js`)
 - pizzip
 - multer
 
