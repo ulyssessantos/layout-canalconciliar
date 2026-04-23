@@ -64,6 +64,10 @@ Gera um documento a partir de template + dados JSON.
 - `data`: string JSON (ou campos JSON no body)
 - `outputName` (opcional): nome do arquivo de saída
 - `outputFormat` (opcional): use `pdf` para converter DOCX preenchido em PDF
+- `templateType`/`templateExtension` (opcional): `docx`, `pptx` ou `xlsx` (útil quando upload vem como `application/zip` sem extensão no nome)
+
+
+> Dica de integração Spring Boot: se o multipart enviar o arquivo como `application/zip` ou sem extensão no nome original, envie também `templateType=docx` (ou `pptx`/`xlsx`) para identificação correta do template.
 
 #### Exemplo com cURL
 

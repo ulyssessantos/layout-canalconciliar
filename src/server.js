@@ -15,6 +15,14 @@ const port = process.env.PORT || 3000;
 
 const supportedExtensions = new Set(["docx", "pptx", "xlsx"]);
 
+const officeMimeToExtension = {
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx"
+};
+
+const genericZipMimes = new Set(["application/zip", "application/x-zip-compressed", "application/octet-stream"]);
+
 const mimeByExtension = {
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
@@ -113,6 +121,31 @@ async function convertDocxToPdf(docxBuffer) {
   }
 }
 
+
+function resolveTemplateExtension(file, body = {}) {
+  const fromBody = (body.templateType || body.templateExtension || "").toString().toLowerCase();
+  if (supportedExtensions.has(fromBody)) {
+    return fromBody;
+  }
+
+  const fromFileName = getExtension(file.originalname);
+  if (supportedExtensions.has(fromFileName)) {
+    return fromFileName;
+  }
+
+  const fromMime = officeMimeToExtension[file.mimetype];
+  if (fromMime) {
+    return fromMime;
+  }
+
+  const wantsPdf = (body.outputFormat || "").toString().toLowerCase() === "pdf" || getExtension(body.outputName || "") === "pdf";
+  if (wantsPdf && genericZipMimes.has(file.mimetype)) {
+    return "docx";
+  }
+
+  return "";
+}
+
 function shouldExportPdf(req) {
   const requestedFormat = (req.body.outputFormat || "").toString().toLowerCase();
   const requestedByFormat = requestedFormat === "pdf";
@@ -133,10 +166,10 @@ app.post("/render", upload.single("template"), async (req, res) => {
       });
     }
 
-    const extension = getExtension(req.file.originalname);
+    const extension = resolveTemplateExtension(req.file, req.body);
     if (!supportedExtensions.has(extension)) {
       return res.status(400).json({
-        error: "Formato não suportado. Use DOCX, PPTX ou XLSX."
+        error: "Não foi possível identificar o tipo do template. Envie arquivo DOCX/PPTX/XLSX com extensão correta ou informe templateType (docx|pptx|xlsx)."
       });
     }
 
